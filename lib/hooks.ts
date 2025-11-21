@@ -58,5 +58,6 @@ export function useDeleteRequest() {
 
   return {
     deleteRequest: deleteRequestMutation.mutateAsync,
+    isDeleting: deleteRequestMutation.isPending,
   };
 }

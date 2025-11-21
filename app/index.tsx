@@ -2,32 +2,37 @@ import { PaginationControls } from "@/components/PaginationControls";
 import { RequestFilters } from "@/components/RequestFilters";
 import { RequestForm } from "@/components/RequestForm";
 import { RequestList } from "@/components/RequestList";
+import { UserAlert } from "@/components/ui/UserAlert";
 import { useDeleteRequest, useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useMemo } from "react";
-import { Alert, FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useCallback, useMemo, useState } from "react";
+import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
+import Toast from 'react-native-toast-message';
 
 
 export default function Index() {
- const {
+  const {
     requests,
     isLoading,
     error,
     mutate,
-    filters: {
-      currentPage,
-      setCurrentPage,
-      searchQuery,
-      setSearchQuery,
-      sortOrder,
-      setSortOrder,
-      itemsPerPage,
-      totalCount,
-    },
+    filters,
   } = useRequests();
 
-  const { deleteRequest } = useDeleteRequest();
+  const {
+    currentPage,
+    setCurrentPage,
+    searchQuery,
+    setSearchQuery,
+    sortOrder,
+    setSortOrder,
+    itemsPerPage,
+    totalCount,
+  } = filters;
+
+  const { deleteRequest,isDeleting } = useDeleteRequest();
  
 
   const handleSearchChange = useCallback( (query: string) => {
@@ -50,77 +55,121 @@ export default function Index() {
     return Math.ceil(totalCount / itemsPerPage);
   }, [totalCount, itemsPerPage]);
 
-  const handleDelete = async (id: string) => {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDelete = useCallback((id: string) => {
+    if (!id) return;
+    setPendingDeleteId(id);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!pendingDeleteId) return;
     try {
-      if(!id) return;
-      Alert.alert('Delete Request', 'Are you sure you want to delete this request?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', onPress: async () => {
-          await deleteRequest(id);
-          setCurrentPage(1);
-          mutate();
-        } },
-      ]);
+      await deleteRequest(pendingDeleteId);
+      setPendingDeleteId(null);
+      setCurrentPage(1);
+      mutate();
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to delete request. Please try again.');
+      setDeleteError('Failed to delete request. Please try again.');
     }
-  };
+  }, [deleteRequest, mutate, pendingDeleteId, setCurrentPage]);
+
+  const handleDismissError = useCallback(() => {
+    setDeleteError(null);
+  }, []);
 
 
   return (
     <SafeAreaProvider>
-    <SafeAreaView style={styles.container}>
-    <StatusBar style="light" />
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.keyboardView}
-    >
-      <FlatList
-        data={[]}
-        renderItem={() => null}
-        keyExtractor={() => Math.random().toString()}
-        ListHeaderComponent={
-          <>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>EduZap</Text>
-              <Text style={styles.headerSubtitle}>Request Management</Text>
-            </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar style="light" />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <FlatList
+            data={[]}
+            renderItem={() => null}
+            keyExtractor={() => Math.random().toString()}
+            ListHeaderComponent={
+              <>
+                <View style={styles.header}>
+                  <Text style={styles.headerTitle}>EduZap</Text>
+                  <Text style={styles.headerSubtitle}>Request Management</Text>
+                </View>
 
-            <View style={styles.formSection}>
-              <RequestForm onSuccess={handleSuccess} />
-            </View>
-            <View style={styles.listSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Requests</Text>
-              </View>
-               <RequestFilters
-                onSearchChange={handleSearchChange}
-                onSortChange={setSortOrder}
-                onClearSearch={handleClearSearch}
-                currentSearch={searchQuery}
-                currentSort={sortOrder}
-              />
-              <RequestList
-                requests={requests}
-                isLoading={isLoading}
-                error={error }
-                onRefresh={mutate}
-                onDelete={(id: string) => handleDelete(id)}
-                footerComponent={
-                  <PaginationControls
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
+                <View style={styles.formSection}>
+                  <RequestForm onSuccess={handleSuccess} />
+                </View>
+                <View style={styles.listSection}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Requests</Text>
+                  </View>
+                  <RequestFilters
+                    onSearchChange={handleSearchChange}
+                    onSortChange={setSortOrder}
+                    onClearSearch={handleClearSearch}
+                    currentSearch={searchQuery}
+                    currentSort={sortOrder}
                   />
-                }
-              />
-          </View>
-          </>
-        }
-      />
-      </KeyboardAvoidingView>
-      </SafeAreaView>
+                  {
+                    requests.length ? (
+                   <RequestList
+                      requests={requests}
+                      isLoading={isLoading}
+                      isDeleting={isDeleting}
+                      error={error }
+                      onRefresh={mutate}
+                      onDelete={(id: string) => handleDelete(id)}
+                      footerComponent={
+                        <PaginationControls
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={setCurrentPage}
+                        /> 
+                      } 
+                    />  ) : null
+                  }
+                  
+              </View>
+              <Toast />
+              </>
+            }
+          />
+        </KeyboardAvoidingView>
+        <View pointerEvents="box-none" style={styles.alertStack}>
+          {pendingDeleteId ? (
+            <UserAlert
+              title="Delete Request"
+              description="Are you sure you want to delete this request?"
+              variant="warning"
+              actions={[
+                {
+                  label: 'Cancel',
+                  variant: 'secondary',
+                  onPress: () => setPendingDeleteId(null),
+                },
+                {
+                  label: isDeleting ? 'Deleting...' : 'Delete',
+                  onPress: handleConfirmDelete,
+                  buttonProps: { disabled: isDeleting },
+                },
+              ]}
+            />
+          ) : null}
+          {deleteError ? (
+            <UserAlert
+              title="Error"
+              description={deleteError}
+              variant="danger"
+              dismissible
+              onDismiss={handleDismissError}
+            />
+          ) : null}
+        </View>
+        </SafeAreaView>
       </SafeAreaProvider>
   );
 }
@@ -172,6 +221,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#f3f4f6',
+  },
+  alertStack: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 24,
+    gap: 12,
   },
 });
 

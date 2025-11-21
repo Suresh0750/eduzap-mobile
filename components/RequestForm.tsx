@@ -1,6 +1,6 @@
 import { useCreateRequestMutation } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Toast from 'react-native-toast-message';
 import { FormErrors, IRequest } from '../lib/types';
 import { mapZodErrors, requestSchema } from '../lib/validate';
 import { AlertCircle, CheckCircle, Upload } from './Icons';
@@ -19,11 +20,12 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
 
+
 interface RequestFormProps {
   onSuccess?: () => void;
 }
 
-export const RequestForm= ({ onSuccess }: RequestFormProps) => {
+const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
@@ -36,7 +38,6 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
   const errorTimerID = useRef<number | null>(null)
 
 
-
   const [mediaPermission, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
   const createRequestMutation = useCreateRequestMutation();
   const handleChange = (field: keyof IRequest, value: string) => {
@@ -46,54 +47,38 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
     }
   };
 
-  const ensureMediaPermission = async () => {
-    if (mediaPermission?.granted) {
-      return true;
-    }
-
+  const ensureMediaPermission = useCallback(async () => {
+    if (mediaPermission?.granted) return true;
+  
     const permissionResponse = await requestMediaPermission();
     if (!permissionResponse?.granted) {
-      Alert.alert(
-        'Permission needed',
-        'Please grant media library permissions to upload images.',
-      );
+      Alert.alert('Permission needed', 'Please grant media library permissions to upload images.');
       return false;
     }
-
     return true;
-  };
-
-  const pickImage = async () => {
-    try {
-      const hasPermission = await ensureMediaPermission();
-      if (!hasPermission) {
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]) {
-        const asset = result.assets[0];
-        
-        // Validate file size (max 5MB)
-        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-          setErrors((prev) => ({ ...prev, image: 'Image must be less than 5MB' }));
-          return;
-        }
-
-        setImageUri(asset.uri);
-        setErrors((prev) => ({ ...prev, image: undefined }));
-      }
-    } catch (pickerError) {
-      console.error('Image picker error', pickerError);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+  }, [mediaPermission, requestMediaPermission]);
+  
+  const pickImage = useCallback(async () => {
+    const hasPermission = await ensureMediaPermission();
+    if (!hasPermission) return;
+  
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+  
+    if (!result.canceled && result.assets?.[0]) {
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
     }
-  };
+  }, [ensureMediaPermission]);
+  
+
+  useEffect(()=>{
+    console.log('Rerender in Request Form')
+  })
 
   const removeImage = () => {
     setImageUri(null);
@@ -105,18 +90,19 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
     setErrors({});
     setSuccess(false);
 
-    // Validate form data
+   
+    try {
+       // Validate form data
     const validationResult = requestSchema.safeParse(formData);
     if (!validationResult.success) {
       setErrors(mapZodErrors(validationResult.error.issues));
       setIsLoading(false);
-      errorTimerID.current = setTimeout(()=>{
-        setErrors({})
-      },4000)
+      errorTimerID.current = setTimeout(() => {
+        setErrors((prev) => ({ ...prev, submit: undefined }));
+      }, 4000)
       return;
     }
 
-    try {
       // Create FormData for multipart/form-data
       const formDataToSend = new FormData();
       formDataToSend.append('name', validationResult.data.name);
@@ -136,7 +122,7 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
       }
 
       const response = await createRequestMutation.mutateAsync(formDataToSend);
-      console.log("response from server side", response);
+     
       if (response?.data) {
         setSuccess(true);
         setFormData({ name: '', phone: '', title: '' });
@@ -147,15 +133,24 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
         }, 3000);
 
         onSuccess?.();
-        Alert.alert('Success', 'Request submitted successfully!');
+        Toast.show({
+          type: 'success',
+          text1: 'Success 🎉',
+          text2: 'Request submitted successfully!',
+        });
       } else {
         console.log("response from server side error", response);
         setErrors({ submit: 'Failed to submit request. Please try again.' });
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit request. Please try again.';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to submit request. Please try again.';
       setErrors({ submit: errorMessage });
-      Alert.alert('Error', errorMessage);
+      Toast.show({
+        type: 'error',
+        text1: 'Error ❌',
+        text2: errorMessage ? errorMessage :'Something went wrong. Please try again.',
+      });
+      
     } finally {
       setIsLoading(false);
     }
@@ -169,6 +164,29 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
       }
     }
   },[])
+
+  const ImagePreview = useMemo(() => {
+    return (
+      imageUri ? (
+        <View style={styles.imagePreview}>
+          <Image source={{ uri: imageUri }} style={styles.image} />
+          <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
+            <Text style={styles.removeImageText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.imagePicker}
+          onPress={pickImage}
+          disabled={isLoading}
+        >
+          <Upload size={24} color="#60a5fa" />
+          <Text style={styles.imagePickerText}>Tap to select image</Text>
+        </TouchableOpacity>
+      )
+    );
+  }, [imageUri, isLoading, pickImage]);
+  
 
   return (
     <KeyboardAvoidingView
@@ -217,26 +235,7 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
 
             <View style={styles.imageSection}>
               <Text style={styles.label}>Upload Image (Optional)</Text>
-              {!imageUri ? (
-                <TouchableOpacity
-                  style={styles.imagePicker}
-                  onPress={pickImage}
-                  disabled={isLoading}
-                >
-                  <Upload size={24} color="#60a5fa" />
-                  <Text style={styles.imagePickerText}>Tap to select image</Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.imagePreview}>
-                  <Image source={{ uri: imageUri }} style={styles.image} />
-                  <TouchableOpacity
-                    style={styles.removeImageButton}
-                    onPress={removeImage}
-                  >
-                    <Text style={styles.removeImageText}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              {ImagePreview}
               {errors.image && (
                 <View style={styles.errorContainer}>
                   <AlertCircle size={16} color="#ef4444" />
@@ -276,6 +275,9 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
     </KeyboardAvoidingView>
   );
 };
+
+export const RequestForm = memo(RequestFormComponent);
+RequestForm.displayName = 'RequestForm';
 
 const styles = StyleSheet.create({
   container: {

@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from 'react';
+import React, { ReactElement, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +18,7 @@ import { Card } from './ui/Card';
 interface RequestListProps {
   requests: IRequest[];
   isLoading: boolean;
+  isDeleting: boolean;
   error: Error | string | null;
   onRefresh?: () => void;
   onDelete?: (id :string) => void;
@@ -25,9 +26,10 @@ interface RequestListProps {
 }
 
 export const RequestList: React.FC<RequestListProps> = ({
-  requests,
-  isLoading,
-  error,
+  requests=[],
+  isLoading=false,
+  isDeleting=false,
+  error=null,
   onRefresh,
   onDelete,
   footerComponent,
@@ -41,8 +43,12 @@ export const RequestList: React.FC<RequestListProps> = ({
     setTimeout(() => setRefreshing(false), 1000);
   };
 
+  useEffect(()=>{
+    console.log('Error from List')
+  })
+
   const renderRequestItem = ({ item }: { item: IRequest }) => {
-    console.log("item", item);
+  
     const requestId = item._id || item.id;
     const isRecent = isRecentRequest(item.timestamp ?? '');
 
@@ -93,11 +99,11 @@ export const RequestList: React.FC<RequestListProps> = ({
     );
   };
 
-  if (isLoading && requests.length === 0) {
+  if (isLoading && requests.length === 0 || isDeleting) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#22d3ee" />
-        <Text style={styles.loadingText}>Loading requests...</Text>
+        <Text style={styles.loadingText}>{isDeleting ? 'Deleting request...' : 'Loading requests...'}</Text>
       </View>
     );
   }
