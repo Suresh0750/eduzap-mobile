@@ -1,6 +1,6 @@
 import { useCreateRequestMutation } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -33,6 +33,10 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
     phone: '',
     title: '',
   });
+  const errorTimerID = useRef<number | null>(null)
+
+
+
   const [mediaPermission, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
   const createRequestMutation = useCreateRequestMutation();
   const handleChange = (field: keyof IRequest, value: string) => {
@@ -106,6 +110,9 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
     if (!validationResult.success) {
       setErrors(mapZodErrors(validationResult.error.issues));
       setIsLoading(false);
+      errorTimerID.current = setTimeout(()=>{
+        setErrors({})
+      },4000)
       return;
     }
 
@@ -153,6 +160,15 @@ export const RequestForm= ({ onSuccess }: RequestFormProps) => {
       setIsLoading(false);
     }
   };
+
+  useEffect(()=>{
+    return ()=>{
+      if(errorTimerID.current){
+        clearTimeout(errorTimerID.current);
+        errorTimerID.current = null;
+      }
+    }
+  },[])
 
   return (
     <KeyboardAvoidingView

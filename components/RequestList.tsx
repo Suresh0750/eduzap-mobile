@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { ReactElement, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { IRequest } from '../lib/types';
 import { formatDate, isRecentRequest } from '../lib/utils';
@@ -20,7 +20,8 @@ interface RequestListProps {
   isLoading: boolean;
   error: Error | string | null;
   onRefresh?: () => void;
-  onDelete?: () => void;
+  onDelete?: (id :string) => void;
+  footerComponent?: ReactElement | null;
 }
 
 export const RequestList: React.FC<RequestListProps> = ({
@@ -29,13 +30,10 @@ export const RequestList: React.FC<RequestListProps> = ({
   error,
   onRefresh,
   onDelete,
+  footerComponent,
 }) => {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleDelete = async (id: string) => {
-   
-  };
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -44,9 +42,9 @@ export const RequestList: React.FC<RequestListProps> = ({
   };
 
   const renderRequestItem = ({ item }: { item: IRequest }) => {
-    const requestId = item.id;
+    console.log("item", item);
+    const requestId = item._id || item.id;
     const isRecent = isRecentRequest(item.timestamp ?? '');
-    const isDeleting = deletingId === requestId;
 
     return (
       <Card
@@ -70,15 +68,10 @@ export const RequestList: React.FC<RequestListProps> = ({
                 )}
               </View>
               <TouchableOpacity
-                onPress={() => handleDelete("requestId")}
-                disabled={isDeleting}
+                onPress={() => onDelete?.(requestId as string)}
                 style={styles.deleteButton}
               >
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color="#ef4444" />
-                ) : (
-                  <Trash2 size={20} color="#ef4444" />
-                )}
+                <Trash2 size={20} color="#ef4444" />
               </TouchableOpacity>
             </View>
 
@@ -137,6 +130,7 @@ export const RequestList: React.FC<RequestListProps> = ({
           styles.listContent,
           requests.length === 0 && styles.emptyListContent,
         ]}
+        ListFooterComponent={footerComponent ?? null}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -161,6 +155,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
     gap: 12,
+    paddingBottom: 32,
   },
   emptyListContent: {
     flexGrow: 1,

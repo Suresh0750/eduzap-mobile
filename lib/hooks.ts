@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRequestsQuery } from './api';
+import { useDeleteRequestMutation, useRequestsQuery } from './api';
 import { GetRequestsParams } from './types';
 
 export function useRequests() {
@@ -24,8 +24,12 @@ export function useRequests() {
   } = useRequestsQuery(params);
 
   useEffect(() => {
-    console.log("server data", data);
-  }, [data]);
+    if (typeof data?.meta?.totalCount === 'number') {
+      setTotalCount(data.meta.totalCount);
+    } else {
+      setTotalCount(0);
+    }
+  }, [data?.meta?.totalCount]);
 
   return {
     requests: data?.data || [],        
@@ -45,5 +49,14 @@ export function useRequests() {
       itemsPerPage,
       totalCount,
     },
+  };
+}
+
+
+export function useDeleteRequest() {
+  const deleteRequestMutation = useDeleteRequestMutation();
+
+  return {
+    deleteRequest: deleteRequestMutation.mutateAsync,
   };
 }

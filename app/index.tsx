@@ -2,10 +2,10 @@ import { PaginationControls } from "@/components/PaginationControls";
 import { RequestFilters } from "@/components/RequestFilters";
 import { RequestForm } from "@/components/RequestForm";
 import { RequestList } from "@/components/RequestList";
-import { useRequests } from "@/lib/hooks";
+import { useDeleteRequest, useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Alert, FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 
@@ -26,28 +26,46 @@ export default function Index() {
       totalCount,
     },
   } = useRequests();
+
+  const { deleteRequest } = useDeleteRequest();
  
 
-   const handleSearchChange = useCallback( (query: string) => {
+  const handleSearchChange = useCallback( (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
-  }, []);   
+  }, [setSearchQuery, setCurrentPage]);   
 
 
 
   const handleClearSearch = useCallback( () => {
     setSearchQuery('');
     setCurrentPage(1);
-  }, []);
+  }, [setSearchQuery, setCurrentPage]);
 
   const handleSuccess = () => {
     mutate();
   };
 
-    const totalPages = useMemo(() => {
-      return Math.ceil(totalCount / itemsPerPage);
-    }, [totalCount, itemsPerPage]);
+  const totalPages = useMemo(() => {
+    return Math.ceil(totalCount / itemsPerPage);
+  }, [totalCount, itemsPerPage]);
 
+  const handleDelete = async (id: string) => {
+    try {
+      if(!id) return;
+      Alert.alert('Delete Request', 'Are you sure you want to delete this request?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: async () => {
+          await deleteRequest(id);
+          setCurrentPage(1);
+          mutate();
+        } },
+      ]);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to delete request. Please try again.');
+    }
+  };
 
 
   return (
@@ -83,18 +101,20 @@ export default function Index() {
                 currentSearch={searchQuery}
                 currentSort={sortOrder}
               />
-                <RequestList
+              <RequestList
                 requests={requests}
                 isLoading={isLoading}
                 error={error }
-                onRefresh={() => {}}
-                onDelete={() => {}}
+                onRefresh={mutate}
+                onDelete={(id: string) => handleDelete(id)}
+                footerComponent={
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                }
               />
-              <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
           </View>
           </>
         }
@@ -116,6 +136,7 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
+    paddingTop: 35,
     borderBottomWidth: 1,
     borderBottomColor: '#1e293b',
     backgroundColor: '#0f172a',
