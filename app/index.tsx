@@ -1,9 +1,49 @@
+import { RequestFilters } from "@/components/RequestFilters";
 import { RequestForm } from "@/components/RequestForm";
+import { RequestList } from "@/components/RequestList";
+import { useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
+import { useCallback } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+
 export default function Index() {
+ const {
+    requests,
+    isLoading,
+    error,
+    mutate,
+    filters: {
+      currentPage,
+      setCurrentPage,
+      searchQuery,
+      setSearchQuery,
+      sortOrder,
+      setSortOrder,
+      itemsPerPage,
+      totalCount,
+    },
+  } = useRequests();
+ 
+
+   const handleSearchChange = useCallback( (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  }, []);   
+
+  
+
+  const handleClearSearch = useCallback( () => {
+    setSearchQuery('');
+    setCurrentPage(1);
+  }, []);
+
+  const handleSuccess = () => {
+    mutate();
+  };
+
+
   return (
     <SafeAreaProvider>
     <SafeAreaView style={styles.container}>
@@ -24,8 +64,27 @@ export default function Index() {
             </View>
 
             <View style={styles.formSection}>
-              <RequestForm onSuccess={()=>{}} />
+              <RequestForm onSuccess={handleSuccess} />
             </View>
+            <View style={styles.listSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Requests</Text>
+              </View>
+               <RequestFilters
+                onSearchChange={handleSearchChange}
+                onSortChange={setSortOrder}
+                onClearSearch={handleClearSearch}
+                currentSearch={searchQuery}
+                currentSort={sortOrder}
+              />
+                <RequestList
+                requests={requests}
+                isLoading={isLoading}
+                error={error }
+                onRefresh={() => {}}
+                onDelete={() => {}}
+              />
+          </View>
           </>
         }
       />

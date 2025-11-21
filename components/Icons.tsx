@@ -42,3 +42,17 @@ export const Trash2: React.FC<IconProps> = ({ size = 24, color = '#ef4444' }) =>
   </Svg>
 );
 
+export const Search: React.FC<IconProps> = ({ size = 24, color = '#9ca3af' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <Circle cx="11" cy="11" r="8" />
+    <Path d="m21 21-4.35-4.35" />
+  </Svg>
+);
+
+
+export const X: React.FC<IconProps> = ({ size = 24, color = '#9ca3af' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <Line x1="18" y1="6" x2="6" y2="18" />
+    <Line x1="6" y1="6" x2="18" y2="18" />
+  </Svg>
+);

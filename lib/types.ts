@@ -6,6 +6,13 @@ export interface FormErrors {
     submit?: string;
   }
   
+  export interface GetRequestsParams {
+  search?: string;
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
   export interface IRequest {
     _id?: string;
     id?: string;
@@ -21,6 +28,11 @@ export interface FormErrors {
     page: number;
     limit: number;
     hasMore: boolean;
+  }
+
+  export interface ApiResponse<T> {
+    data: T;
+    meta?: IMeta;
   }
   
   
