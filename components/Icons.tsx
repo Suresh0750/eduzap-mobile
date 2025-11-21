@@ -1,9 +1,9 @@
 import React from 'react';
 import Svg, {
-    Circle,
-    Line,
-    Path,
-    Polyline,
+  Circle,
+  Line,
+  Path,
+  Polyline,
 } from 'react-native-svg';
 
 interface IconProps {
@@ -54,5 +54,17 @@ export const X: React.FC<IconProps> = ({ size = 24, color = '#9ca3af' }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
     <Line x1="18" y1="6" x2="6" y2="18" />
     <Line x1="6" y1="6" x2="18" y2="18" />
+  </Svg>
+);
+
+export const ChevronLeft: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <Polyline points="15 18 9 12 15 6" />
+  </Svg>
+);
+
+export const ChevronRight: React.FC<IconProps> = ({ size = 24, color = '#ffffff' }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+    <Polyline points="9 18 15 12 9 6" />
   </Svg>
 );

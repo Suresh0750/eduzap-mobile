@@ -1,9 +1,10 @@
+import { PaginationControls } from "@/components/PaginationControls";
 import { RequestFilters } from "@/components/RequestFilters";
 import { RequestForm } from "@/components/RequestForm";
 import { RequestList } from "@/components/RequestList";
 import { useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -32,7 +33,7 @@ export default function Index() {
     setCurrentPage(1);
   }, []);   
 
-  
+
 
   const handleClearSearch = useCallback( () => {
     setSearchQuery('');
@@ -42,6 +43,11 @@ export default function Index() {
   const handleSuccess = () => {
     mutate();
   };
+
+    const totalPages = useMemo(() => {
+      return Math.ceil(totalCount / itemsPerPage);
+    }, [totalCount, itemsPerPage]);
+
 
 
   return (
@@ -84,6 +90,18 @@ export default function Index() {
                 onRefresh={() => {}}
                 onDelete={() => {}}
               />
+               {/* {totalPages > 1 && (
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              )}   */}
+              <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
           </View>
           </>
         }
