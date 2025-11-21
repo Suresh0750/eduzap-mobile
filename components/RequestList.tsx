@@ -10,6 +10,7 @@ import {
     View
 } from 'react-native';
 import { IRequest } from '../lib/types';
+import { formatDate, isRecentRequest } from '../lib/utils';
 import { Trash2 } from './Icons';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -33,7 +34,7 @@ export const RequestList: React.FC<RequestListProps> = ({
   const [refreshing, setRefreshing] = useState(false);
 
   const handleDelete = async (id: string) => {
-
+   
   };
 
   const handleRefresh = () => {
@@ -44,6 +45,7 @@ export const RequestList: React.FC<RequestListProps> = ({
 
   const renderRequestItem = ({ item }: { item: IRequest }) => {
     const requestId = item.id;
+    const isRecent = isRecentRequest(item.timestamp ?? '');
     const isDeleting = deletingId === requestId;
 
     return (
@@ -61,12 +63,14 @@ export const RequestList: React.FC<RequestListProps> = ({
             <View style={styles.requestHeader}>
               <View style={styles.titleContainer}>
                 <Text style={styles.requestTitle}>{item.title}</Text>
-                 <View style={styles.recentBadge}>
+                {isRecent && (
+                  <View style={styles.recentBadge}>
                     <Text style={styles.recentBadgeText}>Recent</Text>
                   </View>
+                )}
               </View>
               <TouchableOpacity
-                onPress={() => handleDelete("fdfas")}
+                onPress={() => handleDelete("requestId")}
                 disabled={isDeleting}
                 style={styles.deleteButton}
               >
@@ -89,7 +93,7 @@ export const RequestList: React.FC<RequestListProps> = ({
               </View>
             </View>
 
-            <Text style={styles.timestamp}>{item.timestamp}</Text>
+            <Text style={styles.timestamp}>{formatDate(item.timestamp!)}</Text>
           </View>
         </View>
       </Card>
