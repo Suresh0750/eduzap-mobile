@@ -1,21 +1,12 @@
 import { useCreateRequestMutation } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { FormErrors, IRequest } from '../lib/types';
 import { mapZodErrors, requestSchema } from '../lib/validate';
-import { AlertCircle, CheckCircle, Upload } from './Icons';
+import { AlertCircle, CheckCircle } from './Icons';
+import { ImagePreview } from './ImagePreview';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
@@ -97,9 +88,9 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
     if (!validationResult.success) {
       setErrors(mapZodErrors(validationResult.error.issues));
       setIsLoading(false);
-      errorTimerID.current = setTimeout(() => {
-        setErrors((prev) => ({ ...prev, submit: undefined }));
-      }, 4000)
+      // errorTimerID.current = setTimeout(() => {
+      //   setErrors({});
+      // }, 4000)
       return;
     }
 
@@ -165,29 +156,6 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
     }
   },[])
 
-  const ImagePreview = useMemo(() => {
-    return (
-      imageUri ? (
-        <View style={styles.imagePreview}>
-          <Image source={{ uri: imageUri }} style={styles.image} />
-          <TouchableOpacity style={styles.removeImageButton} onPress={removeImage}>
-            <Text style={styles.removeImageText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={styles.imagePicker}
-          onPress={pickImage}
-          disabled={isLoading}
-        >
-          <Upload size={24} color="#60a5fa" />
-          <Text style={styles.imagePickerText}>Tap to select image</Text>
-        </TouchableOpacity>
-      )
-    );
-  }, [imageUri, isLoading, pickImage]);
-  
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -235,7 +203,12 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
 
             <View style={styles.imageSection}>
               <Text style={styles.label}>Upload Image (Optional)</Text>
-              {ImagePreview}
+              <ImagePreview
+                uri={imageUri}
+                isLoading={isLoading}
+                onRemove={removeImage}
+                onPick={pickImage}
+              />
               {errors.image && (
                 <View style={styles.errorContainer}>
                   <AlertCircle size={16} color="#ef4444" />
@@ -313,47 +286,6 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     marginBottom: 8,
-  },
-  imagePicker: {
-    height: 120,
-    borderWidth: 2,
-    borderColor: '#374151',
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1f2937',
-  },
-  imagePickerText: {
-    marginTop: 8,
-    color: '#60a5fa',
-    fontSize: 14,
-  },
-  imagePreview: {
-    position: 'relative',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-  removeImageButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.9)',
-    borderRadius: 16,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  removeImageText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   errorContainer: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { ReactElement, useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -22,32 +22,30 @@ interface RequestListProps {
   error: Error | string | null;
   onRefresh?: () => void;
   onDelete?: (id :string) => void;
+  headerComponent?: ReactElement | null;
   footerComponent?: ReactElement | null;
 }
 
-export const RequestList: React.FC<RequestListProps> = ({
+const RequestListComponent: React.FC<RequestListProps> = ({
   requests=[],
   isLoading=false,
   isDeleting=false,
   error=null,
   onRefresh,
   onDelete,
+  headerComponent,
   footerComponent,
 }) => {
   const [refreshing, setRefreshing] = useState(false);
 
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
     onRefresh?.();
     setTimeout(() => setRefreshing(false), 1000);
-  };
+  }, [onRefresh]);
 
-  useEffect(()=>{
-    console.log('Error from List')
-  })
-
-  const renderRequestItem = ({ item }: { item: IRequest }) => {
+  const renderRequestItem = useCallback(({ item }: { item: IRequest }) => {
   
     const requestId = item._id || item.id;
     const isRecent = isRecentRequest(item.timestamp ?? '');
@@ -97,46 +95,78 @@ export const RequestList: React.FC<RequestListProps> = ({
         </View>
       </Card>
     );
-  };
+  }, [onDelete]);
 
-  if (isLoading && requests.length === 0 || isDeleting) {
+  const keyExtractor = useCallback(
+    (item: IRequest) => item.id || item._id || `${item.timestamp}-${item.title}`,
+    []
+  );
+
+  const renderEmptyComponent = useMemo(() => {
+    if (isLoading) {
+      return (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#22d3ee" />
+          <Text style={styles.loadingText}>Loading requests...</Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <Card style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Error loading requests</Text>
+          <Text style={styles.errorText}>
+            {typeof error === 'string' ? error : error?.message || 'Unknown error'}
+          </Text>
+          <Button
+            title="Retry"
+            onPress={() => {
+              onRefresh?.();
+            }}
+            style={styles.retryButton}
+          />
+        </Card>
+      );
+    }
+
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#22d3ee" />
-        <Text style={styles.loadingText}>{isDeleting ? 'Deleting request...' : 'Loading requests...'}</Text>
+        <Text style={styles.emptyText}>No requests found</Text>
       </View>
     );
-  }
+  }, [error, isLoading, onRefresh]);
 
-  if (error) {
+  const listFooter = useMemo(() => {
+    if (!footerComponent && !isDeleting) {
+      return null;
+    }
+
     return (
-      <Card style={styles.errorCard}>
-        <Text style={styles.errorTitle}>Error loading requests</Text>
-        <Text style={styles.errorText}>
-          {typeof error === 'string' ? error : error?.message || 'Unknown error'}
-        </Text>
-        <Button
-          title="Retry"
-          onPress={() => {
-            onRefresh?.();
-          }}
-          style={styles.retryButton}
-        />
-      </Card>
+      <View style={styles.footerContainer}>
+        {footerComponent ?? null}
+        {isDeleting ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="small" color="#22d3ee" />
+            <Text style={styles.loadingText}>Deleting request...</Text>
+          </View>
+        ) : null}
+      </View>
     );
-  }
+  }, [footerComponent, isDeleting]);
 
   return (
     <View style={styles.container}>
       <FlatList
         data={requests}
         renderItem={renderRequestItem}
-        keyExtractor={(item) => item.id || item._id || Math.random().toString()}
+        keyExtractor={keyExtractor}
         contentContainerStyle={[
           styles.listContent,
           requests.length === 0 && styles.emptyListContent,
         ]}
-        ListFooterComponent={footerComponent ?? null}
+        ListHeaderComponent={headerComponent ?? null}
+        ListFooterComponent={listFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -144,15 +174,13 @@ export const RequestList: React.FC<RequestListProps> = ({
             tintColor="#22d3ee"
           />
         }
-        ListEmptyComponent={
-          <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No requests found</Text>
-          </View>
-        }
+        ListEmptyComponent={renderEmptyComponent}
       />
     </View>
   );
 };
+
+export const RequestList = React.memo(RequestListComponent);
 
 const styles = StyleSheet.create({
   container: {
@@ -165,6 +193,11 @@ const styles = StyleSheet.create({
   },
   emptyListContent: {
     flexGrow: 1,
+  },
+  footerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 12,
   },
   requestCard: {
     marginBottom: 12,

@@ -6,7 +6,7 @@ import { UserAlert } from "@/components/ui/UserAlert";
 import { useDeleteRequest, useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import Toast from 'react-native-toast-message';
@@ -47,9 +47,9 @@ export default function Index() {
     setCurrentPage(1);
   }, [setSearchQuery, setCurrentPage]);
 
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     mutate();
-  };
+  }, [mutate]);
 
   const totalPages = useMemo(() => {
     return Math.ceil(totalCount / itemsPerPage);
@@ -80,6 +80,47 @@ export default function Index() {
     setDeleteError(null);
   }, []);
 
+  const listHeader = useMemo(() => (
+    <>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>EduZap</Text>
+        <Text style={styles.headerSubtitle}>Request Management</Text>
+      </View>
+
+      <View style={styles.formSection}>
+        <RequestForm onSuccess={handleSuccess} />
+      </View>
+
+      <View style={styles.listSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Requests</Text>
+        </View>
+        <RequestFilters
+          onSearchChange={handleSearchChange}
+          onSortChange={setSortOrder}
+          onClearSearch={handleClearSearch}
+          currentSearch={searchQuery}
+          currentSort={sortOrder}
+        />
+      </View>
+    </>
+  ), [
+    handleClearSearch,
+    handleSearchChange,
+    handleSuccess,
+    searchQuery,
+    sortOrder,
+    setSortOrder,
+  ]);
+
+  const paginationFooter = useMemo(() => (
+    <PaginationControls
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onPageChange={setCurrentPage}
+    />
+  ), [currentPage, totalPages, setCurrentPage]);
+
 
   return (
     <SafeAreaProvider>
@@ -89,55 +130,17 @@ export default function Index() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <FlatList
-            data={[]}
-            renderItem={() => null}
-            keyExtractor={() => Math.random().toString()}
-            ListHeaderComponent={
-              <>
-                <View style={styles.header}>
-                  <Text style={styles.headerTitle}>EduZap</Text>
-                  <Text style={styles.headerSubtitle}>Request Management</Text>
-                </View>
-
-                <View style={styles.formSection}>
-                  <RequestForm onSuccess={handleSuccess} />
-                </View>
-                <View style={styles.listSection}>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Requests</Text>
-                  </View>
-                  <RequestFilters
-                    onSearchChange={handleSearchChange}
-                    onSortChange={setSortOrder}
-                    onClearSearch={handleClearSearch}
-                    currentSearch={searchQuery}
-                    currentSort={sortOrder}
-                  />
-                  {
-                    requests.length ? (
-                   <RequestList
-                      requests={requests}
-                      isLoading={isLoading}
-                      isDeleting={isDeleting}
-                      error={error }
-                      onRefresh={mutate}
-                      onDelete={(id: string) => handleDelete(id)}
-                      footerComponent={
-                        <PaginationControls
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={setCurrentPage}
-                        /> 
-                      } 
-                    />  ) : null
-                  }
-                  
-              </View>
-              <Toast />
-              </>
-            }
+          <RequestList
+            requests={requests}
+            isLoading={isLoading}
+            isDeleting={isDeleting}
+            error={error}
+            onRefresh={mutate}
+            onDelete={(id: string) => handleDelete(id)}
+            headerComponent={listHeader}
+            footerComponent={paginationFooter}
           />
+          <Toast />
         </KeyboardAvoidingView>
         <View pointerEvents="box-none" style={styles.alertStack}>
           {pendingDeleteId ? (
@@ -224,10 +227,14 @@ const styles = StyleSheet.create({
   },
   alertStack: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 24,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
     gap: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
