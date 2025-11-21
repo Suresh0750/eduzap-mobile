@@ -1,11 +1,11 @@
 import React from 'react';
 import { StyleSheet, ViewStyle } from 'react-native';
 import {
-    Button,
-    ButtonProps,
-    Text,
-    TouchableOpacity,
-    View,
+  Button,
+  ButtonProps,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native-ui-lib';
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'danger';
@@ -45,10 +45,10 @@ const VARIANT_STYLES: Record<
     text: '#dcfce7',
   },
   warning: {
-    background: '#431407',
-    border: '#fb923c',
-    accent: '#fb923c',
-    text: '#ffedd5',
+    background: '#0f172a',
+    border: '#3b82f6',
+    accent: '#3b82f6',
+    text: '#e2e8f0',
   },
   danger: {
     background: '#450a0a',
