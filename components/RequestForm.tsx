@@ -1,6 +1,8 @@
-import { FormErrors, IRequest } from '@/lib/types';
+import { useCreateRequestMutation } from '@/lib/api';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -8,8 +10,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
+import { FormErrors, IRequest } from '../lib/types';
+import { mapZodErrors, requestSchema } from '../lib/validate';
 import { AlertCircle, CheckCircle, Upload } from './Icons';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -19,7 +23,7 @@ interface RequestFormProps {
   onSuccess?: () => void;
 }
 
-export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
+export const RequestForm= ({ onSuccess }: RequestFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState(false);
@@ -29,7 +33,8 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
     phone: '',
     title: '',
   });
-
+  const [mediaPermission, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
+  const createRequestMutation = useCreateRequestMutation();
   const handleChange = (field: keyof IRequest, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field as keyof FormErrors]) {
@@ -37,8 +42,53 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
     }
   };
 
+  const ensureMediaPermission = async () => {
+    if (mediaPermission?.granted) {
+      return true;
+    }
+
+    const permissionResponse = await requestMediaPermission();
+    if (!permissionResponse?.granted) {
+      Alert.alert(
+        'Permission needed',
+        'Please grant media library permissions to upload images.',
+      );
+      return false;
+    }
+
+    return true;
+  };
+
   const pickImage = async () => {
-   
+    try {
+      const hasPermission = await ensureMediaPermission();
+      if (!hasPermission) {
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        
+        // Validate file size (max 5MB)
+        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+          setErrors((prev) => ({ ...prev, image: 'Image must be less than 5MB' }));
+          return;
+        }
+
+        setImageUri(asset.uri);
+        setErrors((prev) => ({ ...prev, image: undefined }));
+      }
+    } catch (pickerError) {
+      console.error('Image picker error', pickerError);
+      Alert.alert('Error', 'Failed to pick image. Please try again.');
+    }
   };
 
   const removeImage = () => {
@@ -47,7 +97,61 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    
+    setIsLoading(true);
+    setErrors({});
+    setSuccess(false);
+
+    // Validate form data
+    const validationResult = requestSchema.safeParse(formData);
+    if (!validationResult.success) {
+      setErrors(mapZodErrors(validationResult.error.issues));
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Create FormData for multipart/form-data
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', validationResult.data.name);
+      formDataToSend.append('phone', validationResult.data.phone);
+      formDataToSend.append('title', validationResult.data.title);
+
+      if (imageUri) {
+        const filename = imageUri.split('/').pop() || 'image.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        
+        formDataToSend.append('image', {
+          uri: imageUri,
+          name: filename,
+          type,
+        } as any);
+      }
+
+      const response = await createRequestMutation.mutateAsync(formDataToSend);
+      console.log("response from server side", response);
+      if (response?.data) {
+        setSuccess(true);
+        setFormData({ name: '', phone: '', title: '' });
+        setImageUri(null);
+        
+        setTimeout(() => {
+          setSuccess(false);
+        }, 3000);
+
+        onSuccess?.();
+        Alert.alert('Success', 'Request submitted successfully!');
+      } else {
+        console.log("response from server side error", response);
+        setErrors({ submit: 'Failed to submit request. Please try again.' });
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit request. Please try again.';
+      setErrors({ submit: errorMessage });
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -69,7 +173,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
             <Input
               label="Your Name *"
               value={formData.name}
-              onChangeText={(value:string) => handleChange('name', value)}
+              onChangeText={(value) => handleChange('name', value)}
               placeholder="Enter your full name"
               disabled={isLoading}
               error={errors.name}
@@ -78,7 +182,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
             <Input
               label="Phone Number *"
               value={formData.phone}
-              onChangeText={(value:string) => handleChange('phone', value)}
+              onChangeText={(value) => handleChange('phone', value)}
               placeholder="10-digit phone number"
               keyboardType="phone-pad"
               maxLength={10}
@@ -89,7 +193,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
             <Input
               label="Request Title *"
               value={formData.title}
-              onChangeText={(value:string) => handleChange('title', value)}
+              onChangeText={(value) => handleChange('title', value)}
               placeholder="E.g., RS Agrawal Maths Book"
               disabled={isLoading}
               error={errors.title}
@@ -103,7 +207,7 @@ export const RequestForm: React.FC<RequestFormProps> = ({ onSuccess }) => {
                   onPress={pickImage}
                   disabled={isLoading}
                 >
-                    <Upload size={24} color="#60a5fa" />
+                  <Upload size={24} color="#60a5fa" />
                   <Text style={styles.imagePickerText}>Tap to select image</Text>
                 </TouchableOpacity>
               ) : (

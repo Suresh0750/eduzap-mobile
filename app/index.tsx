@@ -90,13 +90,6 @@ export default function Index() {
                 onRefresh={() => {}}
                 onDelete={() => {}}
               />
-               {/* {totalPages > 1 && (
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              )}   */}
               <PaginationControls
                   currentPage={currentPage}
                   totalPages={totalPages}
