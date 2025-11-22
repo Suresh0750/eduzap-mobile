@@ -15,30 +15,34 @@ export interface InputProps extends TextInputProps {
   disabled ?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = React.forwardRef<TextInput, InputProps>(({
   label,
   error,
   containerStyle,
   style,
   disabled,
   ...props
-}) => {
+}, ref) => {
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
+        ref={ref}
         style={[
           styles.input,
           error && styles.inputError,
           style,
         ]}
         placeholderTextColor="#6b7280"
+        editable={!disabled}
         {...props}
       />
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
-};
+});
+
+Input.displayName = 'Input';
 
 const styles = StyleSheet.create({
   container: {

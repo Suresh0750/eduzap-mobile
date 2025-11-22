@@ -1,7 +1,7 @@
 import { useCreateRequestMutation } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { FormErrors, IRequest } from '../lib/types';
 import { mapZodErrors, requestSchema } from '../lib/validate';
@@ -26,7 +26,12 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
     phone: '',
     title: '',
   });
-  const errorTimerID = useRef<number | null>(null)
+  const errorTimerID = useRef<number | null>(null);
+  
+  
+  const nameInputRef = useRef<TextInput>(null);
+  const phoneInputRef = useRef<TextInput>(null);
+  const titleInputRef = useRef<TextInput>(null);
 
 
   const [mediaPermission, requestMediaPermission] = ImagePicker.useMediaLibraryPermissions();
@@ -83,14 +88,23 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
 
    
     try {
-       // Validate form data
+       // * Validate form data
     const validationResult = requestSchema.safeParse(formData);
     if (!validationResult.success) {
-      setErrors(mapZodErrors(validationResult.error.issues));
+      const mappedErrors = mapZodErrors(validationResult.error.issues);
+      setErrors(mappedErrors);
       setIsLoading(false);
-      // errorTimerID.current = setTimeout(() => {
-      //   setErrors({});
-      // }, 4000)
+      
+     
+      if (mappedErrors.name) {
+        nameInputRef.current?.focus();
+      } else if (mappedErrors.phone) {
+        phoneInputRef.current?.focus();
+      } else if (mappedErrors.title) {
+        titleInputRef.current?.focus();
+      } else {
+        nameInputRef.current?.focus();
+      }
       return;
     }
 
@@ -166,6 +180,7 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
 
         <View style={styles.form}>
           <Input
+            ref={nameInputRef}
             label="Your Name *"
             value={formData.name}
             onChangeText={(value) => handleChange('name', value)}
@@ -175,6 +190,7 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
           />
 
           <Input
+            ref={phoneInputRef}
             label="Phone Number *"
             value={formData.phone}
             onChangeText={(value) => handleChange('phone', value)}
@@ -186,6 +202,7 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
           />
 
           <Input
+            ref={titleInputRef}
             label="Request Title *"
             value={formData.title}
             onChangeText={(value) => handleChange('title', value)}
