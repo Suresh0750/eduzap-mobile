@@ -5,7 +5,7 @@ import { RequestList } from "@/components/RequestList";
 import { UserAlert } from "@/components/ui/UserAlert";
 import { useDeleteRequest, useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -55,26 +55,30 @@ export default function Index() {
     return Math.ceil(totalCount / itemsPerPage);
   }, [totalCount, itemsPerPage]);
 
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const pendingDeleteIdRef = useRef<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = useCallback((id: string) => {
     if (!id) return;
-    setPendingDeleteId(id);
+    pendingDeleteIdRef.current = id;
+    setShowDeleteModal(true);
   }, []);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!pendingDeleteId) return;
+    const id = pendingDeleteIdRef.current;
+    if (!id) return;
     try {
-      await deleteRequest(pendingDeleteId);
-      setPendingDeleteId(null);
+      await deleteRequest(id);
+      pendingDeleteIdRef.current = null;
+      setShowDeleteModal(false);
       setCurrentPage(1);
       mutate();
     } catch (error) {
       console.error(error);
       setDeleteError('Failed to delete request. Please try again.');
     }
-  }, [deleteRequest, mutate, pendingDeleteId, setCurrentPage]);
+  }, [deleteRequest, mutate, setCurrentPage]);
 
   const handleDismissError = useCallback(() => {
     setDeleteError(null);
@@ -85,8 +89,13 @@ export default function Index() {
       currentPage={currentPage}
       totalPages={totalPages}
       onPageChange={setCurrentPage}
+      setIsModal={() => {
+        pendingDeleteIdRef.current = null;
+        setShowDeleteModal(false);
+      }}
+      isModal={pendingDeleteIdRef.current}
     />
-  ), [currentPage, totalPages, setCurrentPage]);
+  ), [currentPage, totalPages, setCurrentPage, showDeleteModal]);
 
 
   return (
@@ -137,7 +146,7 @@ export default function Index() {
           <Toast />
         </KeyboardAvoidingView>
         <View pointerEvents="box-none" style={styles.alertStack}>
-          {pendingDeleteId ? (
+          {showDeleteModal ? (
             <UserAlert
               title="Delete Request"
               description="Are you sure you want to delete this request?"
@@ -146,7 +155,10 @@ export default function Index() {
                 {
                   label: 'Cancel',
                   variant: 'secondary',
-                  onPress: () => setPendingDeleteId(null),
+                  onPress: () => {
+                    pendingDeleteIdRef.current = null;
+                    setShowDeleteModal(false);
+                  },
                 },
                 {
                   label: isDeleting ? 'Deleting...' : 'Delete',

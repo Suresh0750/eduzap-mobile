@@ -6,12 +6,16 @@ interface PaginationControlsProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  isModal?: string | number | null,
+  setIsModal? : ()=>void;
 }
 
 export const PaginationControls: React.FC<PaginationControlsProps> = ({
   currentPage,
   totalPages,
   onPageChange,
+  isModal,
+  setIsModal
 }) => {
   if (totalPages <= 1) {
     return null;
@@ -19,12 +23,15 @@ export const PaginationControls: React.FC<PaginationControlsProps> = ({
 
   const handlePrevious = () => {
     if (currentPage > 1) {
+      if(isModal)setIsModal?.()
       onPageChange(currentPage - 1);
     }
   };
 
   const handleNext = () => {
+    console.log('check the next page ',+JSON.stringify(isModal))
     if (currentPage < totalPages) {
+      if(isModal)setIsModal?.()
       onPageChange(currentPage + 1);
     }
   };
