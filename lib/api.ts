@@ -19,6 +19,7 @@ export const useRequestsQuery = (params: GetRequestsParams) => {
 
       return response.data;
     },
+    staleTime : Infinity // *used to store the data's 
   });
 };
 
@@ -42,6 +43,7 @@ export const useCreateRequestMutation = () => {
     },
 
     onSuccess: () => {
+       // * used to clear the cache 
       queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
   });
@@ -60,6 +62,7 @@ export const useDeleteRequestMutation = () => {
     },
 
     onSuccess: () => {
+      // * used to clear the cache 
       queryClient.invalidateQueries({ queryKey: ["requests"] });
     },
   });
