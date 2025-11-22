@@ -1,50 +1,174 @@
-# Welcome to your Expo app 👋
+# EduZap Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern React Native mobile application built with Expo for managing educational requests. This app allows users to submit requests with images and provides a comprehensive interface for viewing, searching, and managing requests.
 
-## Get started
+## Features
 
-1. Install dependencies
+### Core Functionality
+- **Request Management**: Create, view, and delete educational requests
+- **Image Upload**: Upload images with each request using the device camera or photo library
+- **Search & Filter**: Search requests by name, title, or phone number with real-time filtering
+- **Pagination**: Efficient pagination controls for browsing through multiple requests
+- **Form Validation**: Comprehensive client-side validation with error handling
 
-   ```bash
-   npm install
-   ```
+### Technical Highlights
 
-2. Start the app
+#### TanStack Query (React Query) for Data Caching
+This application uses **TanStack Query** to efficiently manage and cache server data. Key benefits include:
 
-   ```bash
-   npx expo start
-   ```
+- **Automatic Caching**: Request data is automatically cached to reduce unnecessary API calls
+- **Background Updates**: Data stays fresh with automatic background refetching
+- **Optimistic Updates**: Instant UI updates while server operations complete
+- **Cache Invalidation**: Smart cache invalidation ensures data consistency after create/delete operations
+- **Loading States**: Built-in loading and error states for better user experience
 
-In the output, you'll find options to open the app in a
+The caching strategy uses `staleTime: Infinity` to store request data until explicitly invalidated, ensuring optimal performance and reduced network usage.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+#### Reusable Components
+The application follows a component-based architecture with a library of reusable UI components:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- **Button**: Flexible button component with multiple variants (default, outline, destructive, ghost) and sizes
+- **Card**: Consistent card container for grouping related content
+- **Input**: Form input field with label, error handling, and validation support
+- **UserAlert**: Alert component for displaying confirmations, errors, and warnings
+- **ImagePreview**: Reusable image preview and upload component
+- **PaginationControls**: Reusable pagination component for navigating through pages
+- **RequestFilters**: Search and sort controls for filtering requests
+- **RequestList**: Display component for rendering lists of requests
+- **RequestForm**: Complete form component for creating new requests
 
-## Get a fresh project
+All components are designed to be reusable across different parts of the application, following React best practices with proper TypeScript typing and memoization for performance optimization.
 
-When you're ready, run:
+#### Image Upload
+The app includes a comprehensive image upload feature:
 
-```bash
-npm run reset-project
+- **Photo Library Access**: Users can select images from their device photo library
+- **Permission Handling**: Automatic permission requests with user-friendly error messages
+- **Image Preview**: Preview selected images before submission
+- **Image Editing**: Basic image editing with aspect ratio constraints
+- **Multipart Upload**: Images are uploaded as part of multipart/form-data requests
+- **Image Removal**: Easy removal of selected images before submission
+
+## Technology Stack
+
+- **Framework**: React Native with Expo
+- **Language**: TypeScript
+- **State Management**: TanStack Query for server state
+- **Navigation**: Expo Router
+- **HTTP Client**: Axios
+- **Image Handling**: Expo Image Picker
+- **UI Components**: Custom component library
+- **Form Validation**: Zod schema validation
+
+## Project Structure
+
+```
+eduzap-mobile/
+├── app/                    # Expo Router pages
+│   ├── _layout.tsx        # Root layout
+│   └── index.tsx          # Main screen
+├── components/            # Reusable components
+│   ├── ui/               # UI component library
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   ├── Input.tsx
+│   │   └── UserAlert.tsx
+│   ├── ImagePreview.tsx
+│   ├── PaginationControls.tsx
+│   ├── RequestFilters.tsx
+│   ├── RequestForm.tsx
+│   └── RequestList.tsx
+├── lib/                   # Core utilities
+│   ├── api.ts            # TanStack Query hooks
+│   ├── apiClient.ts      # Axios client configuration
+│   ├── hooks.ts          # Custom React hooks
+│   ├── types.ts          # TypeScript type definitions
+│   ├── utils.ts          # Utility functions
+│   └── validate.ts       # Zod validation schemas
+└── assets/               # Images and static assets
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Getting Started
 
-## Learn more
+### Prerequisites
 
-To learn more about developing your project with Expo, look at the following resources:
+- Node.js (v18 or higher)
+- npm or yarn package manager
+- Expo CLI (optional, can use npx)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Installation
 
-## Join the community
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd eduzap-mobile
+```
 
-Join our community of developers creating universal apps.
+2. Install dependencies
+```bash
+npm install
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+3. Start the development server
+```bash
+npm start
+```
+
+4. Run on your preferred platform
+```bash
+npm run android    # For Android
+npm run ios        # For iOS
+npm run web        # For Web
+```
+
+## Usage
+
+### Creating a Request
+
+1. Fill in the required fields:
+   - Name
+   - Phone Number (10 digits)
+   - Request Title
+
+2. Optionally upload an image by tapping the image upload area
+
+3. Tap "Submit Request" to create the request
+
+### Managing Requests
+
+- Use the search bar to filter requests by name, title, or phone number
+- Sort requests in ascending or descending order
+- Use pagination controls to navigate through multiple pages
+- Pull down to refresh the request list
+- Tap delete on any request to remove it
+
+## API Configuration
+
+The app requires a backend API endpoint. Configure the API base URL in the `lib/apiClient.ts` file.
+
+## Development
+
+### Code Style
+
+The project uses ESLint for code quality. Run the linter with:
+
+```bash
+npm run lint
+```
+
+### TypeScript
+
+The project is fully typed with TypeScript. Type definitions can be found in the `lib/types.ts` file.
+
+## Performance Optimizations
+
+- **React.memo**: Components are memoized to prevent unnecessary re-renders
+- **useCallback**: Event handlers are memoized to maintain referential equality
+- **useMemo**: Computed values are memoized for performance
+- **TanStack Query Caching**: Reduces API calls through intelligent caching
+- **Image Optimization**: Images are compressed before upload
+
+## License
+
+Private project - All rights reserved
+
