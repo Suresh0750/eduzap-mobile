@@ -175,6 +175,8 @@ const RequestListComponent: React.FC<RequestListProps> = ({
           />
         }
         ListEmptyComponent={renderEmptyComponent}
+        scrollEnabled={false}
+        nestedScrollEnabled={true}
       />
     </View>
   );
@@ -184,7 +186,7 @@ export const RequestList = React.memo(RequestListComponent);
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width: '100%',
   },
   listContent: {
     padding: 16,

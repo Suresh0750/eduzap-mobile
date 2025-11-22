@@ -1,7 +1,7 @@
 import { useCreateRequestMutation } from '@/lib/api';
 import * as ImagePicker from 'expo-image-picker';
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { FormErrors, IRequest } from '../lib/types';
 import { mapZodErrors, requestSchema } from '../lib/validate';
@@ -157,95 +157,87 @@ const RequestFormComponent = ({ onSuccess }: RequestFormProps) => {
   },[])
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Card style={styles.card}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Request Anything</Text>
-            <Text style={styles.subtitle}>We Deliver in 2 Hours</Text>
+    <View style={styles.container}>
+      <Card style={styles.card}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Request Anything</Text>
+          <Text style={styles.subtitle}>We Deliver in 2 Hours</Text>
+        </View>
+
+        <View style={styles.form}>
+          <Input
+            label="Your Name *"
+            value={formData.name}
+            onChangeText={(value) => handleChange('name', value)}
+            placeholder="Enter your full name"
+            disabled={isLoading}
+            error={errors.name}
+          />
+
+          <Input
+            label="Phone Number *"
+            value={formData.phone}
+            onChangeText={(value) => handleChange('phone', value)}
+            placeholder="10-digit phone number"
+            keyboardType="phone-pad"
+            maxLength={10}
+            disabled={isLoading}
+            error={errors.phone}
+          />
+
+          <Input
+            label="Request Title *"
+            value={formData.title}
+            onChangeText={(value) => handleChange('title', value)}
+            placeholder="E.g., RS Agrawal Maths Book"
+            disabled={isLoading}
+            error={errors.title}
+          />
+
+          <View style={styles.imageSection}>
+            <Text style={styles.label}>Upload Image (Optional)</Text>
+            <ImagePreview
+              uri={imageUri}
+              isLoading={isLoading}
+              onRemove={removeImage}
+              onPick={pickImage}
+            />
+            {errors.image && (
+              <View style={styles.errorContainer}>
+                <AlertCircle size={16} color="#ef4444" />
+                <Text style={styles.errorText}>{errors.image}</Text>
+              </View>
+            )}
           </View>
 
-          <View style={styles.form}>
-            <Input
-              label="Your Name *"
-              value={formData.name}
-              onChangeText={(value) => handleChange('name', value)}
-              placeholder="Enter your full name"
-              disabled={isLoading}
-              error={errors.name}
-            />
-
-            <Input
-              label="Phone Number *"
-              value={formData.phone}
-              onChangeText={(value) => handleChange('phone', value)}
-              placeholder="10-digit phone number"
-              keyboardType="phone-pad"
-              maxLength={10}
-              disabled={isLoading}
-              error={errors.phone}
-            />
-
-            <Input
-              label="Request Title *"
-              value={formData.title}
-              onChangeText={(value) => handleChange('title', value)}
-              placeholder="E.g., RS Agrawal Maths Book"
-              disabled={isLoading}
-              error={errors.title}
-            />
-
-            <View style={styles.imageSection}>
-              <Text style={styles.label}>Upload Image (Optional)</Text>
-              <ImagePreview
-                uri={imageUri}
-                isLoading={isLoading}
-                onRemove={removeImage}
-                onPick={pickImage}
-              />
-              {errors.image && (
-                <View style={styles.errorContainer}>
-                  <AlertCircle size={16} color="#ef4444" />
-                  <Text style={styles.errorText}>{errors.image}</Text>
-                </View>
-              )}
+          {errors.submit && (
+            <View style={styles.errorAlert}>
+              <AlertCircle size={20} color="#ef4444" />
+              <Text style={styles.errorAlertText}>{errors.submit}</Text>
             </View>
+          )}
 
-            {errors.submit && (
-              <View style={styles.errorAlert}>
-                <AlertCircle size={20} color="#ef4444" />
-                <Text style={styles.errorAlertText}>{errors.submit}</Text>
-              </View>
-            )}
+          {success && (
+            <View style={styles.successAlert}>
+              <CheckCircle size={20} color="#10b981" />
+              <Text style={styles.successAlertText}>Request submitted successfully!</Text>
+            </View>
+          )}
 
-            {success && (
-              <View style={styles.successAlert}>
-                <CheckCircle size={20} color="#10b981" />
-                <Text style={styles.successAlertText}>Request submitted successfully!</Text>
-              </View>
-            )}
+          <Button
+            title={isLoading ? 'Submitting...' : 'Submit Request'}
+            onPress={handleSubmit}
+            disabled={isLoading}
+            loading={isLoading}
+            style={styles.submitButton}
+          />
 
-            <Button
-              title={isLoading ? 'Submitting...' : 'Submit Request'}
-              onPress={handleSubmit}
-              disabled={isLoading}
-              loading={isLoading}
-              style={styles.submitButton}
-            />
-
-            <Text style={styles.footerText}>
-              Your request will be processed immediately
-            </Text>
-          </View>
-        </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.footerText}>
+            Your request will be processed immediately
+          </Text>
+        </View>
+      </Card>
+    </View>
   );
 };
 
@@ -254,10 +246,7 @@ RequestForm.displayName = 'RequestForm';
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
+    width: '100%',
   },
   card: {
     width: '100%',

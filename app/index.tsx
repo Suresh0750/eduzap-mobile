@@ -6,7 +6,7 @@ import { UserAlert } from "@/components/ui/UserAlert";
 import { useDeleteRequest, useRequests } from "@/lib/hooks";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import Toast from 'react-native-toast-message';
@@ -80,39 +80,6 @@ export default function Index() {
     setDeleteError(null);
   }, []);
 
-  const listHeader = useMemo(() => (
-    <>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>EduZap</Text>
-        <Text style={styles.headerSubtitle}>Request Management</Text>
-      </View>
-
-      <View style={styles.formSection}>
-        <RequestForm onSuccess={handleSuccess} />
-      </View>
-
-      <View style={styles.listSection}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Requests</Text>
-        </View>
-        <RequestFilters
-          onSearchChange={handleSearchChange}
-          onSortChange={setSortOrder}
-          onClearSearch={handleClearSearch}
-          currentSearch={searchQuery}
-          currentSort={sortOrder}
-        />
-      </View>
-    </>
-  ), [
-    handleClearSearch,
-    handleSearchChange,
-    handleSuccess,
-    searchQuery,
-    sortOrder,
-    setSortOrder,
-  ]);
-
   const paginationFooter = useMemo(() => (
     <PaginationControls
       currentPage={currentPage}
@@ -130,16 +97,43 @@ export default function Index() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <RequestList
-            requests={requests}
-            isLoading={isLoading}
-            isDeleting={isDeleting}
-            error={error}
-            onRefresh={mutate}
-            onDelete={(id: string) => handleDelete(id)}
-            headerComponent={listHeader}
-            footerComponent={paginationFooter}
-          />
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>EduZap</Text>
+            <Text style={styles.headerSubtitle}>Request Management</Text>
+          </View>
+
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled={true}
+          >
+            <View style={styles.formSection}>
+              <RequestForm onSuccess={handleSuccess} />
+            </View>
+
+            <View style={styles.listSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Requests</Text>
+              </View>
+              <RequestFilters
+                onSearchChange={handleSearchChange}
+                onSortChange={setSortOrder}
+                onClearSearch={handleClearSearch}
+                currentSearch={searchQuery}
+                currentSort={sortOrder}
+              />
+              <RequestList
+                requests={requests}
+                isLoading={isLoading}
+                isDeleting={isDeleting}
+                error={error}
+                onRefresh={mutate}
+                onDelete={(id: string) => handleDelete(id)}
+                footerComponent={paginationFooter}
+              />
+            </View>
+          </ScrollView>
           <Toast />
         </KeyboardAvoidingView>
         <View pointerEvents="box-none" style={styles.alertStack}>
@@ -213,7 +207,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   listSection: {
-    flex: 1,
+    paddingBottom: 16,
   },
   sectionHeader: {
     paddingHorizontal: 16,
